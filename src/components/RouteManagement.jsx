@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
-import { makeStyles } from '@mui/styles';
-
-const useStyles = makeStyles((theme) => ({
-  dialogPaper: {
-    minWidth: '400px',
-    padding: theme.spacing(2),
-  },
-  textField: {
-    marginBottom: theme.spacing(2),
-  },
-}));
+import { toast } from 'react-toastify';
 
 const RouteManagement = () => {
   const [tuyenXe, setTuyenXe] = useState([]);
@@ -20,43 +9,34 @@ const RouteManagement = () => {
   const [diemDen, setDiemDen] = useState('');
   const [khoangCach, setKhoangCach] = useState('');
 
-  const classes = useStyles();
   const [open, setOpen] = useState(false);
   const [tuyenXeSua, setTuyenXeSua] = useState({});
-  
-
-  
 
   useEffect(() => {
     getAllTX();
   }, []);
 
-  const getAllTX =async () => {
+  const getAllTX = async () => {
     try {
-      await axios.get('http://192.168.31.45:9999/api/AlltuyenXe')
-      .then(response => {
-        if(response && response.data) {
-          setTuyenXe(response.data.data)
-        }
-      })
-      .catch(error => {
-        console.log(error);
-      });
+      const response = await axios.get('http://192.168.31.45:9999/api/AlltuyenXe');
+      setTuyenXe(response.data.data || []);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
-  }
+  };
 
   const handleDelete = async (id) => {
     try {
       const response = await fetch(`http://192.168.31.45:9999/api/deleteTuyenXe/${id}`, { method: 'DELETE' });
       if (response.ok) {
         setTuyenXe(tuyenXe.filter((tx) => tx.ID_TuyenXe !== id));
+        toast.success("Xóa tuyến xe thành công");
       } else {
-        console.error('Lỗi khi xóa tuyến xe');
+        toast.error("Lỗi khi xóa tuyến xe");
       }
     } catch (error) {
-      console.error('Lỗi khi xóa tuyến xe:', error);
+      console.error(error);
+      toast.error("Lỗi khi xóa tuyến xe");
     }
   };
 
@@ -68,31 +48,24 @@ const RouteManagement = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          tenTuyenDi:tenTuyenXe,
-          diemDi:diemDi,
-          diemDen:diemDen,
-          KhoangCach:khoangCach,
-        }),
+        body: JSON.stringify({ tenTuyenDi: tenTuyenXe, diemDi, diemDen, KhoangCach: khoangCach }),
       });
-  
-      if (!response.ok) {
-        throw new Error('Đã xảy ra lỗi khi thêm tuyến xe');
+      if (response.ok) {
+        toast.success("Thêm tuyến xe thành công");
+        setTenTuyenXe('');
+        setDiemDi('');
+        setDiemDen('');
+        setKhoangCach('');
+        getAllTX();
+      } else {
+        toast.error("Lỗi khi thêm tuyến xe");
       }
-  
-      // Xử lý khi thêm thành công
-      console.log('Thêm tuyến xe thành công');
-      setTenTuyenXe("")
-      setDiemDi("")
-      setDiemDen("")
-      setKhoangCach("");
-      getAllTX();
     } catch (error) {
-      console.error('Lỗi:', error);
-      // Hiển thị thông báo lỗi cho người dùng
+      console.error(error);
+      toast.error("Lỗi khi thêm tuyến xe");
     }
   };
-  
+
   const handleClickOpen = (tuyenXe) => {
     setOpen(true);
     setTuyenXeSua(tuyenXe);
@@ -105,166 +78,171 @@ const RouteManagement = () => {
   const handleSubmitSua = async (e) => {
     e.preventDefault();
 
-    const dataChange = {
-      tenTuyenDi: tuyenXeSua.TenTuyenXe, 
-      huyenDiemDi: tuyenXeSua.DiemDi, 
-      huyenDiemDen: tuyenXeSua.DiemDen, 
-      khoangCach: tuyenXeSua.KhoangCach
-    }
-
-
+    console.log(tuyenXeSua)
     try {
-      const response = await axios.put(`http://192.168.31.45:9999/api/updateTuyenXe/${tuyenXeSua.ID_TuyenXe}`, dataChange); // Thay thế `/api/tuyen-xe/${id}` bằng URL thực tế của API
+      const response = await axios.put(
+        `http://192.168.31.45:9999/api/updateTuyenXe/${tuyenXeSua.ID_TuyenXe}`,
+        {
+          tenTuyenDi: tuyenXeSua.TenTuyenXe,
+          diemDi: tuyenXeSua.DiemDi,
+          diemDen: tuyenXeSua.DiemDen,
+          khoangCach: tuyenXeSua.KhoangCach,
+        }
+      );
       if (response.status === 200) {
-        console.log('Cập nhật tuyến xe thành công:', response.data);
+        toast.success("Cập nhật tuyến xe thành công");
         getAllTX();
         handleClose();
       } else {
-        console.error('Lỗi cập nhật tuyến xe:', response.data);
+        toast.error("Lỗi khi cập nhật tuyến xe");
       }
     } catch (error) {
-      console.error('Lỗi khi gọi API:', error);
+      console.error(error);
+      toast.error("Lỗi khi cập nhật tuyến xe");
     }
   };
 
+
   return (
-    <div style={{ marginLeft: '250px', marginTop: '50px', padding: '20px' }}>
-      <div>
-      <h2>Thêm Tuyến Xe</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Tên tuyến xe:</label>
+    <div className="p-10 mt-10 w-[80%] mx-auto" style={{marginTop: "80px",width:"80%" ,marginLeft: "250px"}}>
+      {/* Form thêm tuyến xe */}
+      <div className="mb-12">
+        <h2 className="text-3xl font-semibold mb-6 text-center text-gray-700">Thêm Tuyến Xe</h2>
+        <form
+          className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white shadow-md p-8 rounded-lg border border-gray-200"
+          onSubmit={handleSubmit}
+        >
           <input
             type="text"
+            placeholder="Tên tuyến xe"
+            className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={tenTuyenXe}
             onChange={(e) => setTenTuyenXe(e.target.value)}
           />
-        </div>
-        <div>
-          <label>Điểm đi:</label>
           <input
             type="text"
+            placeholder="Điểm đi"
+            className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={diemDi}
             onChange={(e) => setDiemDi(e.target.value)}
           />
-        </div>
-        <div>
-          <label>Điểm đến:</label>
           <input
             type="text"
+            placeholder="Điểm đến"
+            className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={diemDen}
             onChange={(e) => setDiemDen(e.target.value)}
           />
-        </div>
-        <div>
-          <label>Khoảng cách:</label>
           <input
             type="number"
+            placeholder="Khoảng cách (km)"
+            className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={khoangCach}
             onChange={(e) => setKhoangCach(e.target.value)}
           />
-        </div>
-        <button type="submit">Thêm tuyến xe</button>
-      </form>
-    </div>
+          <button
+            className="bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 transition-all"
+          >
+            Thêm Tuyến Xe
+          </button>
+        </form>
+      </div>
 
-      <div className="tuyen-xe-container">
+      {/* Danh sách tuyến xe */}
       <div>
-      <h2>Quản lý Tuyến Xe</h2>
+        <h2 className="text-3xl font-semibold mb-6 text-center text-gray-700">Quản Lý Tuyến Xe</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full border border-gray-300 rounded-md shadow-sm bg-white">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-gray-700">ID</th>
+                <th className="px-4 py-3 text-gray-700">Tên Tuyến Xe</th>
+                <th className="px-4 py-3 text-gray-700">Điểm Đi</th>
+                <th className="px-4 py-3 text-gray-700">Điểm Đến</th>
+                <th className="px-4 py-3 text-gray-700">Khoảng Cách</th>
+                <th className="px-4 py-3 text-gray-700">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tuyenXe.map((tx) => (
+                <tr key={tx.ID_TuyenXe} className="hover:bg-gray-100">
+                  <td className="px-4 py-3 text-gray-700 border">{tx.ID_TuyenXe}</td>
+                  <td className="px-4 py-3 text-gray-700 border">{tx.TenTuyenXe}</td>
+                  <td className="px-4 py-3 text-gray-700 border">{tx.DiemDi}</td>
+                  <td className="px-4 py-3 text-gray-700 border">{tx.DiemDen}</td>
+                  <td className="px-4 py-3 text-gray-700 border">{tx.KhoangCach} km</td>
+                  <td className="px-4 py-3 text-gray-700 border flex justify-center space-x-2">
+                    <button
+                      onClick={() => handleClickOpen(tx)}
+                      className="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition-all"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      onClick={() => handleDelete(tx.ID_TuyenXe)}
+                      className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-all"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID Tuyến Xe</th>
-            <th>Tên Tuyến Xe</th>
-            <th>Điểm Đi</th>
-            <th>Điểm Đến</th>
-            <th>Khoảng Cách</th>
-            <th>Thao Tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tuyenXe.map((tx) => (
-            <tr key={tx.ID_TuyenXe}>
-              <td>{tx.ID_TuyenXe}</td>
-              <td>{tx.TenTuyenXe}</td>
-              <td>{tx.DiemDi}</td>
-              <td>{tx.DiemDen}</td>
-              <td>{tx.KhoangCach} km</td>
-              <td>
-                <button onClick={() => handleClickOpen(tx)}>Sửa</button>
-                <button onClick={() => handleDelete(tx.ID_TuyenXe)}>Xóa</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <Dialog open={open} onClose={handleClose} classes={{ paper: classes.dialogPaper }}>
-        <DialogTitle>Sửa Tuyến Xe</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="tenTuyenXe"
-            label="Tên tuyến xe"
-            type="text"
-            fullWidth
-            className={classes.textField}
-            value={tuyenXeSua.TenTuyenXe}
-            onChange={(e) =>
-              setTuyenXeSua({ ...tuyenXeSua, TenTuyenXe: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            id="diemDi"
-            label="Điểm đi"
-            type="text"
-            fullWidth
-            className={classes.textField}
-            value={tuyenXeSua.DiemDi}
-            onChange={(e) =>
-              setTuyenXeSua({ ...tuyenXeSua, DiemDi: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            id="diemDen"
-            label="Điểm đến"
-            type="text"
-            fullWidth
-            className={classes.textField}
-            value={tuyenXeSua.DiemDen}
-            onChange={(e) =>
-              setTuyenXeSua({ ...tuyenXeSua, DiemDen: e.target.value })
-            }
-          />
-          <TextField
-            margin="dense"
-            id="khoangCach"
-            label="Khoảng cách"
-            type="number"
-            fullWidth
-            className={classes.textField}
-            value={tuyenXeSua.KhoangCach}
-            onChange={(e) =>
-              setTuyenXeSua({ ...tuyenXeSua, KhoangCach: e.target.value })
-            }
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="primary">
-            Hủy
-          </Button>
-          <Button onClick={(e) => handleSubmitSua(e,tuyenXeSua.ID_TuyenXe)} color="primary">
-            Lưu
-          </Button>
-        </DialogActions>
-      </Dialog>
-      </div>
-      
+
+      {/* Modal chỉnh sửa */}
+      {open && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+          <div className="bg-white rounded-lg p-8 w-[90%] md:w-[50%]">
+            <h3 className="text-2xl font-semibold mb-4 text-gray-700">Sửa Tuyến Xe</h3>
+            <form className="grid grid-cols-1 gap-4" onSubmit={handleSubmitSua}>
+              <input
+                type="text"
+                placeholder="Tên tuyến xe"
+                className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={tuyenXeSua.TenTuyenXe}
+                onChange={(e) => setTuyenXeSua({ ...tuyenXeSua, TenTuyenXe: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Điểm đi"
+                className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={tuyenXeSua.DiemDi}
+                onChange={(e) => setTuyenXeSua({ ...tuyenXeSua, DiemDi: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Điểm đến"
+                className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={tuyenXeSua.DiemDen}
+                onChange={(e) => setTuyenXeSua({ ...tuyenXeSua, DiemDen: e.target.value })}
+              />
+              <input
+                type="number"
+                placeholder="Khoảng cách (km)"
+                className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={tuyenXeSua.KhoangCach}
+                onChange={(e) => setTuyenXeSua({ ...tuyenXeSua, KhoangCach: e.target.value })}
+              />
+              <div className="flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-all"
+                >
+                  Hủy
+                </button>
+                <button className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-all">
+                  Lưu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
-    
   );
 };
 

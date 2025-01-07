@@ -4,12 +4,9 @@ const Header = () => {
   return (
     <header style={styles.header}>
       <div style={styles.left}>
-        <button style={styles.menuButton}>☰</button>
         <h1 style={styles.title}>Xe Khách Tuấn Trung</h1>
       </div>
       <div style={styles.right}>
-        <span style={styles.icon}>🔔</span>
-        <span style={styles.icon}>📧</span>
         <span style={styles.profile}>
           <img
             src="https://via.placeholder.com/40"
